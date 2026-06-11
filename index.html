@@ -61,13 +61,13 @@
         const SUPABASE_URL = 'https://vlkswcjpktigfayjgxzd.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_3zQyZayhIIn4krTv6fUT_A_97TqSiu2';
         
-        // កន្លែងនេះបានកែសម្រួលដកសញ្ញា @ ចេញរួចរាល់ហើយបង (supabase.createClient)
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // កែប្តូរឈ្មោះប្រកាសជា supabaseClient ដើម្បីកុំឱ្យជាន់គ្នាជាមួយ Library របស់វា
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let records = [];
 
         // មុខងារទាញទិន្នន័យពី Cloud Database មកបង្ហាញ
         async function fetchRecords() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('ot_records')
                 .select('*')
                 .order('created_at', { ascending: true });
@@ -117,7 +117,7 @@
 
         // មុខងារថែមជួរថ្មីទៅក្នុង Cloud Database
         async function addRow() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('ot_records')
                 .insert([{ name: 'បុគ្គលិកថ្មី', amount: 0 }])
                 .select();
@@ -133,7 +133,7 @@
         async function updateDatabase(id, field, value, isNumber = false) {
             const updatedValue = isNumber ? (parseFloat(value) || 0) : value;
             
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('ot_records')
                 .update({ [field]: updatedValue })
                 .eq('id', id);
@@ -150,7 +150,7 @@
         // មុខងារលុបទិន្នន័យបុគ្គលិកចេញពី Cloud Database
         async function deleteRow(id) {
             if(confirm("តើបងពិតជាចង់លុបទិន្នន័យបុគ្គលិកនេះមែនទេ?")) {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('ot_records')
                     .delete()
                     .eq('id', id);
