@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Amount Tracker</title>
+    <title>Cloud Amount Tracker (Multi-Currency)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,12 +11,12 @@
 </head>
 <body class="bg-slate-50 p-4 md:p-6 font-sans">
 
-    <div class="max-w-3xl mx-auto bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
+    <div class="max-w-4xl mx-auto bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
         
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
             <div>
-                <h1 class="text-xl font-bold text-slate-800">តារាងកត់ត្រាទឹកប្រាក់ (Cloud Database)</h1>
-                <p class="text-xs text-slate-500 mt-1">ទិន្នន័យ Sync គ្នារវាងទូរស័ព្ទទាំងអស់ភ្លាមៗ</p>
+                <h1 class="text-xl font-bold text-slate-800">តារាងកត់ត្រាទឹកប្រាក់ (ដុល្លារ & រៀល)</h1>
+                <p class="text-xs text-slate-500 mt-1">ទិន្នន័យ Sync គ្នារវាងទូរស័ព្ទទាំងអស់ភ្លាមៗ និងគណនាដាច់ដោយឡែក</p>
             </div>
             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
@@ -37,19 +37,25 @@
                     <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold text-sm select-none">
                         <th class="p-3 border-r border-slate-200 text-center w-16">ល.រ</th>
                         <th class="p-3 border-r border-slate-200">ឈ្មោះ</th>
-                        <th class="p-3 border-r border-slate-200 text-center w-48">ទឹកប្រាក់ ($)</th>
+                        <th class="p-3 border-r border-slate-200 text-center w-28">ប្រភេទលុយ</th>
+                        <th class="p-3 border-r border-slate-200 text-center w-40">ទឹកប្រាក់</th>
                         <th class="p-3 text-center w-16">លុប</th>
                     </tr>
                 </thead>
                 <tbody id="table-body" class="text-slate-600 text-sm divide-y divide-slate-200">
                     <tr>
-                        <td colspan="4" class="p-4 text-center text-slate-400">កំពុងទាញទិន្នន័យពី Cloud...</td>
+                        <td colspan="5" class="p-4 text-center text-slate-400">កំពុងទាញទិន្នន័យពី Cloud...</td>
                     </tr>
                 </tbody>
                 <tfoot>
-                    <tr class="bg-slate-100 font-bold text-slate-700 border-t-2 border-slate-300 text-sm select-none">
-                        <td colspan="2" class="p-3 border-r border-slate-200 text-right">ទឹកប្រាក់សរុប (Total Amount):</td>
-                        <td id="grand-total-amount" class="p-3 border-r border-slate-200 text-center text-emerald-700 bg-emerald-50/50 text-base">$0.00</td>
+                    <tr class="bg-slate-50 font-bold text-slate-700 border-t-2 border-slate-200 text-sm select-none">
+                        <td colspan="3" class="p-2 text-right text-blue-700">ទឹកប្រាក់សរុបជា ដុល្លារ ($):</td>
+                        <td id="total-usd-amount" class="p-2 text-center text-blue-700 bg-blue-50/50 text-base font-semibold">$0.00</td>
+                        <td></td>
+                    </tr>
+                    <tr class="bg-slate-100 font-bold text-slate-700 border-t border-slate-200 text-sm select-none">
+                        <td colspan="3" class="p-2 text-right text-emerald-700">ទឹកប្រាក់សរុបជា រៀល (៛):</td>
+                        <td id="total-khr-amount" class="p-2 text-center text-emerald-700 bg-emerald-50/50 text-base font-semibold">0 ៛</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -61,11 +67,10 @@
         const SUPABASE_URL = 'https://vlkswcjpktigfayjgxzd.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_3zQyZayhIIn4krTv6fUT_A_97TqSiu2';
         
-        // កែប្តូរឈ្មោះប្រកាសជា supabaseClient ដើម្បីកុំឱ្យជាន់គ្នាជាមួយ Library របស់វា
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let records = [];
 
-        // មុខងារទាញទិន្នន័យពី Cloud Database មកបង្ហាញ
+        // ទាញទិន្នន័យពី Cloud Database
         async function fetchRecords() {
             const { data, error } = await supabaseClient
                 .from('ot_records')
@@ -81,18 +86,21 @@
             renderTable();
         }
 
-        // មុខងារ Render បង្ហាញទិន្នន័យទៅលើតារាង HTML
+        // បង្ហាញទិន្នន័យទៅលើតារាង HTML
         function renderTable() {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = "";
 
             if (records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 select-none">គ្មានទិន្នន័យឡើយ សូមចុចប៊ូតុង "ថែមឈ្មោះ"</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400 select-none">គ្មានទិន្នន័យឡើយ សូមចុចប៊ូតុង "ថែមឈ្មោះ"</td></tr>`;
                 calculateSummary();
                 return;
             }
 
             records.forEach((item, index) => {
+                const currencySign = item.currency === '៛' ? '៛' : '$';
+                const formattedAmount = item.currency === '៛' ? `${parseFloat(item.amount || 0).toLocaleString()} ៛` : `$${parseFloat(item.amount || 0).toFixed(2)}`;
+
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50/80 transition";
                 tr.innerHTML = `
@@ -101,7 +109,13 @@
                         <input type="text" value="${item.name || ''}" onchange="updateDatabase(${item.id}, 'name', this.value)" placeholder="បញ្ចូលឈ្មោះ..." class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
                     </td>
                     <td class="p-2 border-r border-slate-200 text-center">
-                        <input type="number" step="any" value="${item.amount || ''}" onchange="updateDatabase(${item.id}, 'amount', this.value, true)" placeholder="0.00" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent font-medium text-blue-600 transition">
+                        <select onchange="updateDatabase(${item.id}, 'currency', this.value)" class="bg-transparent border border-slate-200 rounded px-2 py-0.5 outline-none focus:border-blue-500 font-medium text-slate-700 cursor-pointer">
+                            <option value="$" ${item.currency === '$' ? 'selected' : ''}>ដុល្លារ ($)</option>
+                            <option value="៛" ${item.currency === '៛' ? 'selected' : ''}>រៀល (៛)</option>
+                        </select>
+                    </td>
+                    <td class="p-2 border-r border-slate-200 text-center">
+                        <input type="number" step="any" value="${item.amount || ''}" onchange="updateDatabase(${item.id}, 'amount', this.value, true)" placeholder="0" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent font-medium text-blue-600 transition">
                     </td>
                     <td class="p-2 text-center">
                         <button onclick="deleteRow(${item.id})" class="text-rose-500 hover:text-rose-700 p-1 transition cursor-pointer" title="លុបជួរនេះ">
@@ -119,13 +133,13 @@
         async function addRow() {
             const { data, error } = await supabaseClient
                 .from('ot_records')
-                .insert([{ name: 'បុគ្គលិកថ្មី', amount: 0 }])
+                .insert([{ name: 'បុគ្គលិកថ្មី', amount: 0, currency: '$' }])
                 .select();
 
             if (error) {
                 alert('មិនអាចបន្ថែមទិន្នន័យបានទេ៖ ' + error.message);
             } else {
-                fetchRecords(); // ទាញទិន្នន័យថ្មីមកបង្ហាញភ្លាមៗ
+                fetchRecords();
             }
         }
 
@@ -143,11 +157,17 @@
             } else {
                 const item = records.find(r => r.id === id);
                 if (item) item[field] = updatedValue;
-                calculateSummary();
+                
+                // បើសិនជាដូរប្រភេទលុយ ត្រូវទាញរៀបចំតារាងថ្មីដើម្បីឱ្យដូរការបង្ហាញភ្លាមៗ
+                if (field === 'currency') {
+                    renderTable();
+                } else {
+                    calculateSummary();
+                }
             }
         }
 
-        // មុខងារលុបទិន្នន័យបុគ្គលិកចេញពី Cloud Database
+        // មុខងារលុបទិន្នន័យបុគ្គលិក
         async function deleteRow(id) {
             if(confirm("តើបងពិតជាចង់លុបទិន្នន័យបុគ្គលិកនេះមែនទេ?")) {
                 const { error } = await supabaseClient
@@ -163,13 +183,22 @@
             }
         }
 
-        // មុខងារគណនាផលបូកទឹកប្រាក់សរុប
+        // មុខងារគណនាផលបូកទឹកប្រាក់សរុបបំបែកជា $ និង ៛
         function calculateSummary() {
-            let grandTotal = 0;
+            let totalUSD = 0;
+            let totalKHR = 0;
+
             records.forEach(item => {
-                grandTotal += parseFloat(item.amount) || 0;
+                const amt = parseFloat(item.amount) || 0;
+                if (item.currency === '៛') {
+                    totalKHR += amt;
+                } else {
+                    totalUSD += amt;
+                }
             });
-            document.getElementById('grand-total-amount').innerText = `$${grandTotal.toFixed(2)}`;
+
+            document.getElementById('total-usd-amount').innerText = `$${totalUSD.toFixed(2)}`;
+            document.getElementById('total-khr-amount').innerText = `${totalKHR.toLocaleString()} ៛`;
         }
 
         // មុខងារទាញចេញជាហ្វាយ Excel (.xlsx)
@@ -178,20 +207,27 @@
                 alert("គ្មានទិន្នន័យសម្រាប់ទាញចេញទេបង!");
                 return;
             }
-            const excelRows = [["ល.រ", "ឈ្មោះ", "ទឹកប្រាក់ ($)"]];
-            let grandTotal = 0;
+            const excelRows = [["ល.រ", "ឈ្មោះ", "ប្រភេទលុយ", "ទឹកប្រាក់"]];
+            let totalUSD = 0;
+            let totalKHR = 0;
+
             records.forEach((item, index) => {
-                grandTotal += parseFloat(item.amount) || 0;
-                excelRows.push([index + 1, item.name, item.amount]);
+                const amt = parseFloat(item.amount) || 0;
+                if (item.currency === '៛') totalKHR += amt;
+                else totalUSD += amt;
+
+                excelRows.push([index + 1, item.name, item.currency === '៛' ? 'រៀល (៛)' : 'ដុល្លារ ($)', item.amount]);
             });
-            excelRows.push(["ទឹកប្រាក់សរុប", "", grandTotal]);
+
+            excelRows.push(["ទឹកប្រាក់សរុប ($)", "", "", totalUSD]);
+            excelRows.push(["ទឹកប្រាក់សរុប (៛)", "", "", totalKHR]);
 
             const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "តារាងទឹកប្រាក់ Cloud");
             
             const date = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(workbook, `តារាង_ទឹកប្រាក់_Cloud_${date}.xlsx`);
+            XLSX.writeFile(workbook, `តារាង_ទឹកប្រាក់_ពហុរូបិយប័ណ្ណ_${date}.xlsx`);
         }
 
         // ដំណើរការទាញទិន្នន័យដំបូងបង្អស់ពេលបើកទំព័រ Web ភ្លាម
