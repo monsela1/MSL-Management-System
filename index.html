@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Amount Tracker</title>
+    <title>Cloud Amount Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 p-4 md:p-6 font-sans">
 
@@ -14,18 +15,18 @@
         
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
             <div>
-                <h1 class="text-xl font-bold text-slate-800">តារាងកត់ត្រាទឹកប្រាក់</h1>
-                <p class="text-xs text-slate-500 mt-1">ទិន្នន័យរក្សាទុកស្វ័យប្រវត្ត និងទាញចេញជា Excel</p>
+                <h1 class="text-xl font-bold text-slate-800">តារាងកត់ត្រាទឹកប្រាក់ (Cloud Database)</h1>
+                <p class="text-xs text-slate-500 mt-1">ទិន្នន័យ Sync គ្នារវាងទូរស័ព្ទទាំងអស់ភ្លាមៗ</p>
             </div>
             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
                     <i class="fa-solid fa-plus"></i> ថែមឈ្មោះ
                 </button>
+                <button onclick="fetchRecords()" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
+                    <i class="fa-solid fa-rotate"></i> ទាញទិន្នន័យថ្មី (Refresh)
+                </button>
                 <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
                     <i class="fa-solid fa-file-excel"></i> ទាញជា Excel
-                </button>
-                <button onclick="clearAllData()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition cursor-pointer">
-                    <i class="fa-solid fa-trash-can"></i> លុបទាំងអស់
                 </button>
             </div>
         </div>
@@ -41,7 +42,10 @@
                     </tr>
                 </thead>
                 <tbody id="table-body" class="text-slate-600 text-sm divide-y divide-slate-200">
-                    </tbody>
+                    <tr>
+                        <td colspan="4" class="p-4 text-center text-slate-400">កំពុងទាញទិន្នន័យពី Cloud...</td>
+                    </tr>
+                </tbody>
                 <tfoot>
                     <tr class="bg-slate-100 font-bold text-slate-700 border-t-2 border-slate-300 text-sm select-none">
                         <td colspan="2" class="p-3 border-r border-slate-200 text-right">ទឹកប្រាក់សរុប (Total Amount):</td>
@@ -54,16 +58,39 @@
     </div>
 
     <script>
-        // ទាញទិន្នន័យពី LocalStorage បើគ្មានទេ ដាក់ទិន្នន័យគំរូ ២ ជួរ
-        let records = JSON.parse(localStorage.getItem('simple_amount_data')) || [
-            { name: "សុខ ភា", amount: 150.00 },
-            { name: "ចាន់ ធី", amount: 220.50 }
-        ];
+        // កំណត់ការភ្ជាប់ទៅកាន់ Supabase ដោយប្រើប្រាស់ Project ID និង Key របស់បងផ្ទាល់
+        const SUPABASE_URL = 'https://vlkswcjpktigfayjgxzd.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_3zQyZayhIIn4krTv6fUT_A_97TqSiu2';
+        
+        const supabase = @supabase/supabase-js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let records = [];
 
-        // បង្ហាញទិន្នន័យលើតារាង
+        // មុខងារទាញទិន្នន័យពី Cloud Database មកបង្ហាញ
+        async function fetchRecords() {
+            const { data, error } = await supabase
+                .from('ot_records')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                alert('មានបញ្ហាក្នុងការទាញទិន្នន័យ៖ ' + error.message);
+                return;
+            }
+
+            records = data;
+            renderTable();
+        }
+
+        // មុខងារ Render បង្ហាញទិន្នន័យទៅលើតារាង HTML
         function renderTable() {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = "";
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 select-none">គ្មានទិន្នន័យឡើយ សូមចុចប៊ូតុង "ថែមឈ្មោះ"</td></tr>`;
+                calculateSummary();
+                return;
+            }
 
             records.forEach((item, index) => {
                 const tr = document.createElement('tr');
@@ -71,13 +98,13 @@
                 tr.innerHTML = `
                     <td class="p-2 border-r border-slate-200 text-center font-medium bg-slate-50/50 select-none">${index + 1}</td>
                     <td class="p-2 border-r border-slate-200">
-                        <input type="text" value="${item.name}" onchange="updateData(${index}, 'name', this.value)" placeholder="បញ្ចូលឈ្មោះ..." class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                        <input type="text" value="${item.name || ''}" onchange="updateDatabase(${item.id}, 'name', this.value)" placeholder="បញ្ចូលឈ្មោះ..." class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
                     </td>
                     <td class="p-2 border-r border-slate-200 text-center">
-                        <input type="number" step="any" value="${item.amount || ''}" oninput="updateData(${index}, 'amount', this.value, true)" placeholder="0.00" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent font-medium text-blue-600 transition">
+                        <input type="number" step="any" value="${item.amount || ''}" onchange="updateDatabase(${item.id}, 'amount', this.value, true)" placeholder="0.00" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent font-medium text-blue-600 transition">
                     </td>
                     <td class="p-2 text-center">
-                        <button onclick="deleteRow(${index})" class="text-rose-500 hover:text-rose-700 p-1 transition cursor-pointer">
+                        <button onclick="deleteRow(${item.id})" class="text-rose-500 hover:text-rose-700 p-1 transition cursor-pointer" title="លុបជួរនេះ">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </td>
@@ -86,81 +113,91 @@
             });
 
             calculateSummary();
-            saveToLocalStorage();
         }
 
-        // កែប្រែទិន្នន័យ
-        function updateData(index, field, value, isNumber = false) {
-            if (isNumber) {
-                records[index][field] = parseFloat(value) || 0;
-                calculateSummary();
+        // មុខងារថែមជួរថ្មីទៅក្នុង Cloud Database
+        async function addRow() {
+            const { data, error } = await supabase
+                .from('ot_records')
+                .insert([{ name: '', amount: 0 }])
+                .select();
+
+            if (error) {
+                alert('មិនអាចបន្ថែមទិន្នន័យបានទេ៖ ' + error.message);
             } else {
-                records[index][field] = value;
-            }
-            saveToLocalStorage();
-        }
-
-        // ថែមជួរថ្មី
-        function addRow() {
-            records.push({ name: "", amount: 0 });
-            renderTable();
-        }
-
-        // លុបជួរ
-        function deleteRow(index) {
-            records.splice(index, 1);
-            renderTable();
-        }
-
-        // លុបទាំងអស់
-        function clearAllData() {
-            if(confirm("តើបងពិតជាចង់លុបទិន្នន័យទាំងអស់មែនទេ?")) {
-                records = [];
-                renderTable();
+                fetchRecords(); // ទាញទិន្នន័យថ្មីមកបង្ហាញភ្លាមៗ
             }
         }
 
-        // គណនាទឹកប្រាក់សរុប
+        // មុខងារកែប្រែទិន្នន័យនៅលើ Cloud Database ភ្លាមៗពេលប្តូរប្រអប់វាយអក្សរ
+        async function updateDatabase(id, field, value, isNumber = false) {
+            const updatedValue = isNumber ? (parseFloat(value) || 0) : value;
+            
+            const { error } = await supabase
+                .from('ot_records')
+                .update({ [field]: updatedValue })
+                .eq('id', id);
+
+            if (error) {
+                
+                alert('ការកែប្រែទិន្នន័យមានកំហុស៖ ' + error.message);
+            } else {
+                // កែប្រែក្នុង Array ក្នុងម៉ាស៊ីនស្រាប់ដើម្បីឱ្យផលបូករត់លឿនទាន់ចិត្ត
+                const item = records.find(r => r.id === id);
+                if (item) item[field] = updatedValue;
+                calculateSummary();
+            }
+        }
+
+        // មុខងារលុបទិន្នន័យបុគ្គលិកចេញពី Cloud Database
+        async function deleteRow(id) {
+            if(confirm("តើបងពិតជាចង់លុបទិន្នន័យបុគ្គលិកនេះមែនទេ?")) {
+                const { error } = await supabase
+                    .from('ot_records')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    alert('មិនអាចលុបបានទេ៖ ' + error.message);
+                } else {
+                    fetchRecords(); // ទាញទិន្នន័យដែលនៅសល់មកបង្ហាញឡើងវិញ
+                }
+            }
+        }
+
+        // មុខងារគណនាផលបូកទឹកប្រាក់សរុបនៅខាងក្រោមតារាង
         function calculateSummary() {
             let grandTotal = 0;
             records.forEach(item => {
-                grandTotal += item.amount;
+                grandTotal += parseFloat(item.amount) || 0;
             });
             document.getElementById('grand-total-amount').innerText = `$${grandTotal.toFixed(2)}`;
         }
 
-        // Save ចូលសតិចងចាំ Browser
-        function saveToLocalStorage() {
-            localStorage.setItem('simple_amount_data', JSON.stringify(records));
-        }
-
-        // ទាញចេញជា Excel
+        // មុខងារបំប្លែងទិន្នន័យ និងទាញចេញជាហ្វាយ Excel (.xlsx) ផ្លូវការ
         function exportToExcel() {
             if(records.length === 0) {
                 alert("គ្មានទិន្នន័យសម្រាប់ទាញចេញទេបង!");
                 return;
             }
-
             const excelRows = [["ល.រ", "ឈ្មោះ", "ទឹកប្រាក់ ($)"]];
             let grandTotal = 0;
-
             records.forEach((item, index) => {
-                grandTotal += item.amount;
+                grandTotal += parseFloat(item.amount) || 0;
                 excelRows.push([index + 1, item.name, item.amount]);
             });
-
             excelRows.push(["ទឹកប្រាក់សរុប", "", grandTotal]);
 
             const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "តារាងទឹកប្រាក់");
-
+            XLSX.utils.book_append_sheet(workbook, worksheet, "តារាងទឹកប្រាក់ Cloud");
+            
             const date = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(workbook, `តារាង_ទឹកប្រាក់_${date}.xlsx`);
+            XLSX.writeFile(workbook, `តារាង_ទឹកប្រាក់_Cloud_${date}.xlsx`);
         }
 
-        // ដំណើរការតារាងពេលបើក Web ភ្លាម
-        renderTable();
+        // ដំណើរការទាញទិន្នន័យដំបូងបង្អស់ពេលបើកទំព័រ Web ភ្លាម
+        fetchRecords();
     </script>
 </body>
 </html>
