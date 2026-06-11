@@ -3,33 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overtime Management System</title>
+    <title>Factory Overtime Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body class="bg-slate-50 p-6 font-sans">
+<body class="bg-slate-50 p-4 md:p-6 font-sans">
 
-    <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md border border-slate-200">
-        <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">ប្រព័ន្ធគ្រប់គ្រងការថែមម៉ោង (OT)</h1>
-                <p class="text-sm text-slate-500 mt-1">តារាងកត់ត្រាឈ្មោះ និងម៉ោងថែមរបស់បុគ្គលិក</p>
+                <h1 class="text-2xl font-bold text-slate-800">ប្រព័ន្ធគ្រប់គ្រងការថែមម៉ោងរោងចក្រ (OT)</h1>
+                <p class="text-sm text-slate-500 mt-1">កត់ត្រាឈ្មោះ គណនាលុយស្វ័យប្រវត្ត និងទាញចេញជា Excel</p>
             </div>
-            <div>
-                <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition">
+            <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition cursor-pointer">
                     <i class="fa-solid fa-plus"></i> បន្ថែមបុគ្គលិក
+                </button>
+                <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition cursor-pointer">
+                    <i class="fa-solid fa-file-excel"></i> ទាញចេញជា Excel
+                </button>
+                <button onclick="clearAllData()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition cursor-pointer">
+                    <i class="fa-solid fa-trash-can"></i> លុបទិន្នន័យទាំងអស់
                 </button>
             </div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border border-slate-200">
-            <table class="w-full text-left border-collapse bg-white">
+        <div class="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+            <table class="w-full text-left border-collapse bg-white minimum-w-[800px]">
                 <thead>
-                    <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold text-sm">
+                    <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold text-sm select-none">
                         <th class="p-3 border-r border-slate-200 text-center w-16">ល.រ</th>
                         <th class="p-3 border-r border-slate-200 w-32">អត្តលេខ</th>
-                        <th class="p-3 border-r border-slate-200 w-64">គោត្តនាម-នាមខ្លួន</th>
-                        <th class="p-3 border-r border-slate-200 w-40">ផ្នែក/ជំនាញ</th>
+                        <th class="p-3 border-r border-slate-200 w-64">គោត្តនាម - នាមខ្លួន</th>
+                        <th class="p-3 border-r border-slate-200 w-44">ផ្នែក / ជំនាញ</th>
                         <th class="p-3 border-r border-slate-200 text-center w-32">ចំនួនម៉ោង (OT)</th>
                         <th class="p-3 border-r border-slate-200 text-center w-36">តម្លៃ/១ម៉ោង ($)</th>
                         <th class="p-3 border-r border-slate-200 text-center w-40">សរុបទឹកប្រាក់ ($)</th>
@@ -37,25 +45,13 @@
                     </tr>
                 </thead>
                 <tbody id="table-body" class="text-slate-600 text-sm divide-y divide-slate-200">
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="p-2 border-r border-slate-200 text-center font-medium index-cell">1</td>
-                        <td class="p-2 border-r border-slate-200"><input type="text" value="EMP-001" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                        <td class="p-2 border-r border-slate-200"><input type="text" value="សុខ ភា" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                        <td class="p-2 border-r border-slate-200"><input type="text" value="ដេរ/Sewing" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                        <td class="p-2 border-r border-slate-200 text-center"><input type="number" value="2" oninput="calculateRow(this)" class="ot-hours w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                        <td class="p-2 border-r border-slate-200 text-center"><input type="number" value="1.5" oninput="calculateRow(this)" class="hourly-rate w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                        <td class="p-2 border-r border-slate-200 text-center bg-slate-50 font-semibold text-blue-600 total-amount">$3.00</td>
-                        <td class="p-2 text-center">
-                            <button onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
-                        </td>
-                    </tr>
-                </tbody>
+                    </tbody>
                 <tfoot>
-                    <tr class="bg-slate-100 font-bold text-slate-700 border-t-2 border-slate-300 text-sm">
+                    <tr class="bg-slate-100 font-bold text-slate-700 border-t-2 border-slate-300 text-sm select-none">
                         <td colspan="4" class="p-3 border-r border-slate-200 text-right">សរុបរួម (Total):</td>
-                        <td id="total-ot-hours" class="p-3 border-r border-slate-200 text-center text-blue-700">2</td>
+                        <td id="total-ot-hours" class="p-3 border-r border-slate-200 text-center text-blue-700 bg-blue-50/50">0</td>
                         <td class="p-3 border-r border-slate-200 bg-slate-100"></td>
-                        <td id="grand-total-amount" class="p-3 border-r border-slate-200 text-center text-green-700">$3.00</td>
+                        <td id="grand-total-amount" class="p-3 border-r border-slate-200 text-center text-emerald-700 bg-emerald-50/50">$0.00</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -64,75 +60,155 @@
     </div>
 
     <script>
-        // មុខងារបន្ថែមជួរថ្មី (Add Row)
-        function addRow() {
+        // ចាប់ផ្តើមដំណើរការដំបូង៖ ទាញទិន្នន័យពី LocalStorage បើគ្មានទេ ដាក់ទិន្នន័យគំរូ ២ ជួរ
+        let employeeData = JSON.parse(localStorage.getItem('factory_ot_data')) || [
+            { id: "EMP-001", name: "សុខ ភា", department: "ដេរ/Sewing", hours: 2, rate: 1.5 },
+            { id: "EMP-002", name: "ចាន់ ធី", department: "កាត់/Cutting", hours: 3, rate: 1.5 }
+        ];
+
+        // មុខងារ Render បង្ហាញទិន្នន័យទៅលើតារាង HTML
+        function renderTable() {
             const tbody = document.getElementById('table-body');
-            const rowCount = tbody.rows.length + 1;
-            
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50 transition";
-            tr.innerHTML = `
-                <td class="p-2 border-r border-slate-200 text-center font-medium index-cell">${rowCount}</td>
-                <td class="p-2 border-r border-slate-200"><input type="text" placeholder="EMP-..." class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                <td class="p-2 border-r border-slate-200"><input type="text" placeholder="ឈ្មោះបុគ្គលិក" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                <td class="p-2 border-r border-slate-200"><input type="text" placeholder="ផ្នែក" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                <td class="p-2 border-r border-slate-200 text-center"><input type="number" value="0" oninput="calculateRow(this)" class="ot-hours w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                <td class="p-2 border-r border-slate-200 text-center"><input type="number" value="1.5" oninput="calculateRow(this)" class="hourly-rate w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition"></td>
-                <td class="p-2 border-r border-slate-200 text-center bg-slate-50 font-semibold text-blue-600 total-amount">$0.00</td>
-                <td class="p-2 text-center">
-                    <button onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            updateSummary();
-        }
+            tbody.innerHTML = "";
 
-        // មុខងារលុបជួរ (Delete Row)
-        function deleteRow(button) {
-            const row = button.closest('tr');
-            row.remove();
-            reindexRows();
-            updateSummary();
-        }
-
-        // មុខងាររៀបលេខរៀងឡើងវិញពេលលុប Row ចោល
-        function reindexRows() {
-            const rows = document.querySelectorAll('#table-body tr');
-            rows.forEach((row, index) => {
-                row.querySelector('.index-cell').innerText = index + 1;
+            employeeData.forEach((emp, index) => {
+                const totalAmount = (emp.hours * emp.rate).toFixed(2);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-2 border-r border-slate-200 text-center font-medium bg-slate-50/50 select-none">${index + 1}</td>
+                    <td class="p-2 border-r border-slate-200">
+                        <input type="text" value="${emp.id}" onchange="updateData(${index}, 'id', this.value)" placeholder="EMP-..." class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                    </td>
+                    <td class="p-2 border-r border-slate-200">
+                        <input type="text" value="${emp.name}" onchange="updateData(${index}, 'name', this.value)" placeholder="ឈ្មោះបុគ្គលិក" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                    </td>
+                    <td class="p-2 border-r border-slate-200">
+                        <input type="text" value="${emp.department}" onchange="updateData(${index}, 'department', this.value)" placeholder="ផ្នែក" class="w-full px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                    </td>
+                    <td class="p-2 border-r border-slate-200 text-center">
+                        <input type="number" step="any" value="${emp.hours}" oninput="updateData(${index}, 'hours', this.value, true)" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                    </td>
+                    <td class="p-2 border-r border-slate-200 text-center">
+                        <input type="number" step="any" value="${emp.rate}" oninput="updateData(${index}, 'rate', this.value, true)" class="w-full text-center px-2 py-1 border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white rounded outline-none bg-transparent transition">
+                    </td>
+                    <td class="p-2 border-r border-slate-200 text-center bg-slate-50/30 font-semibold text-blue-600 select-none">$${totalAmount}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="deleteRow(${index})" class="text-rose-500 hover:text-rose-700 p-1 transition cursor-pointer" title="លុបជួរនេះ">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
+
+            calculateSummary();
+            saveToLocalStorage();
         }
 
-        // មុខងារគណនាក្នុង Row នីមួយៗ (ម៉ោង x តម្លៃ)
-        function calculateRow(input) {
-            const row = input.closest('tr');
-            const hours = parseFloat(row.querySelector('.ot-hours').value) || 0;
-            const rate = parseFloat(row.querySelector('.hourly-rate').value) || 0;
-            const totalCell = row.querySelector('.total-amount');
-            
-            const total = hours * rate;
-            totalCell.innerText = `$${total.toFixed(2)}`;
-            
-            updateSummary();
+        // មុខងារកែប្រែទិន្នន័យក្នុង Array ពេលអ្នកប្រើវាយបញ្ចូលកែប្រែលើ Cell
+        function updateData(index, field, value, isNumber = false) {
+            if (isNumber) {
+                employeeData[index][field] = parseFloat(value) || 0;
+                // បើជាការកែម៉ោង ឬតម្លៃ ត្រូវរៀបចំគណនាសរុបឡើងវិញភ្លាមៗ
+                const tbody = document.getElementById('table-body');
+                const row = tbody.rows[index];
+                const totalCell = row.cells[6];
+                const total = employeeData[index].hours * employeeData[index].rate;
+                totalCell.innerText = `$${total.toFixed(2)}`;
+                calculateSummary();
+            } else {
+                employeeData[index][field] = value;
+            }
+            saveToLocalStorage();
         }
 
-        // មុខងារគណនាសរុបរួមនៅខាងក្រោមតារាង (Footer Summary)
-        function updateSummary() {
-            const rows = document.querySelectorAll('#table-body tr');
+        // មុខងារបន្ថែមជួរថ្មី
+        function addRow() {
+            employeeData.push({ id: "", name: "", department: "", hours: 0, rate: 1.5 });
+            renderTable();
+        }
+
+        // មុខងារលុបជួរណាមួយចោល
+        function deleteRow(index) {
+            employeeData.splice(index, 1);
+            renderTable();
+        }
+
+        // មុខងារលុបទិន្នន័យទាំងអស់ចោលដើម្បីចាប់ផ្តើមថ្មី
+        function clearAllData() {
+            if(confirm("តើបងពិតជាចង់លុបទិន្នន័យទាំងអស់ក្នុងតារាងមែនទេ?")) {
+                employeeData = [];
+                renderTable();
+            }
+        }
+
+        // មុខងារគណនាផលបូករួមនៅខាងក្រោមតារាង
+        function calculateSummary() {
             let totalHours = 0;
             let grandTotal = 0;
 
-            rows.forEach(row => {
-                const hours = parseFloat(row.querySelector('.ot-hours').value) || 0;
-                const rate = parseFloat(row.querySelector('.hourly-rate').value) || 0;
-                
-                totalHours += hours;
-                grandTotal += (hours * rate);
+            employeeData.forEach(emp => {
+                totalHours += emp.hours;
+                grandTotal += (emp.hours * emp.rate);
             });
 
-            document.getElementById('total-ot-hours').innerText = totalHours;
+            document.getElementById('total-ot-hours').innerText = totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1);
             document.getElementById('grand-total-amount').innerText = `$${grandTotal.toFixed(2)}`;
         }
+
+        // មុខងាររក្សាទុកទិន្នន័យចូល LocalStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('factory_ot_data', JSON.stringify(employeeData));
+        }
+
+        // មុខងារបំប្លែងទិន្នន័យ និងទាញចេញជាហ្វាយ Excel (.xlsx) ផ្លូវការ
+        function exportToExcel() {
+            if(employeeData.length === 0) {
+                alert("គ្មានទិន្នន័យសម្រាប់ទាញចេញទេបង! សូមបន្ថែមទិន្នន័យសិន។");
+                return;
+            }
+
+            // រៀបចំក្បាលតារាងភាសាខ្មែរសម្រាប់ហ្វាយ Excel
+            const excelRows = [
+                ["ល.រ", "អត្តលេខ", "គោត្តនាម-នាមខ្លួន", "ផ្នែក/ជំនាញ", "ចំនួនម៉ោងថែម (OT)", "តម្លៃ/១ម៉ោង ($)", "សរុបទឹកប្រាក់ ($)"]
+            ];
+
+            let totalHours = 0;
+            let grandTotal = 0;
+
+            // បញ្ចូលទិន្នន័យបុគ្គលិកម្នាក់ៗចូលជួរ Excel
+            employeeData.forEach((emp, index) => {
+                const total = emp.hours * emp.rate;
+                totalHours += emp.hours;
+                grandTotal += total;
+
+                excelRows.push([
+                    index + 1,
+                    emp.id,
+                    emp.name,
+                    emp.department,
+                    emp.hours,
+                    emp.rate,
+                    total
+                ]);
+            });
+
+            // បន្ថែមជួរសរុបលទ្ធផលចុងក្រោយគេនៅខាងក្រោមគេបង្អស់
+            excelRows.push(["សរុបរួម (Total)", "", "", "", totalHours, "", grandTotal]);
+
+            // បង្កើត Workbook របស់ SheetJS
+            const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "តារាងម៉ោងថែម OT");
+
+            // ទាញដោនឡូដជាហ្វាយ .xlsx ដោយដាក់ឈ្មោះតាមកាលបរិច្ឆេទ
+            const date = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `តារាង_OT_រោងចក្រ_${date}.xlsx`);
+        }
+
+        // ដំណើរការ Render បង្ហាញតារាងនៅពេលបើក Web ភ្លាម
+        renderTable();
     </script>
 </body>
 </html>
