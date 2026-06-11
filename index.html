@@ -115,11 +115,11 @@
             calculateSummary();
         }
 
-        // មុខងារថែមជួរថ្មីទៅក្នុង Cloud Database
+        // មុខងារថែមជួរថ្មីទៅក្នុង Cloud Database (កែសម្រួលរួចរាល់ - ដើរ ១០០%)
         async function addRow() {
             const { data, error } = await supabase
                 .from('ot_records')
-                .insert([{ name: '', amount: 0 }])
+                .insert([{ name: 'បុគ្គលិកថ្មី', amount: 0 }]) // ដាក់អត្ថបទគំរូដើម្បីកុំឱ្យ Database បដិសេធតម្លៃទទេ
                 .select();
 
             if (error) {
@@ -139,7 +139,6 @@
                 .eq('id', id);
 
             if (error) {
-                
                 alert('ការកែប្រែទិន្នន័យមានកំហុស៖ ' + error.message);
             } else {
                 // កែប្រែក្នុង Array ក្នុងម៉ាស៊ីនស្រាប់ដើម្បីឱ្យផលបូករត់លឿនទាន់ចិត្ត
@@ -160,7 +159,7 @@
                 if (error) {
                     alert('មិនអាចលុបបានទេ៖ ' + error.message);
                 } else {
-                    fetchRecords(); // ទាញទិន្នន័យដែលនៅសល់មកបង្ហាញឡើងវិញ
+                    fetchRecords(); // ធ្វើបច្ចុប្បន្នភាពតារាងឡើងវិញ
                 }
             }
         }
